@@ -12,8 +12,8 @@ class Packet:
         assert len(data) <= 0b1111111111111000 # 0xffff
         assert type(data) == str
         assert type(flags) == int
-        seqNo = seqNo%127
-        ackNo = ackNo%127
+        seqNo = seqNo%256
+        ackNo = ackNo%256
         self.seqNo = seqNo
         self.ackNo = ackNo
         self.flags = flags # ACK | SYN | FIN | NUL
@@ -60,3 +60,18 @@ class Packet:
         
     def getFlag(self, x):
         return (self.flags & x) > 0
+    
+    def __str__(self):
+        return f"""PACKET:
+seqNo: {self.seqNo},
+ackNo: {self.ackNo},
+flags: [
+    ACK: {self.getFlag(ACK)},
+    SYN: {self.getFlag(SYN)},
+    FIN: {self.getFlag(FIN)},
+    NUL: {self.getFlag(NUL)}
+]
+content-length: {len(self.data)},
+data: 
+{self.data}
+        """
