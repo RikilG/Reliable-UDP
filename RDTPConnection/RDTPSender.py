@@ -1,4 +1,5 @@
 from .Socket import RDTPSocket
+from .Packet import Packet
 
 class RDTPSender:
 
@@ -14,7 +15,10 @@ class RDTPSender:
         return self.socket.conn_status == "ESTABLISHED"
 
     def send(self, data):
-        pass
+        assert self.socket.conn_status == "ESTABLISHED"
+        if type(data) == str: data = data.encode('utf-8')
+        assert type(data) in [bytes, bytearray], "Invalid data type"
+        self.socket.send_stream(data)
 
     def close(self):
         self.socket.close()

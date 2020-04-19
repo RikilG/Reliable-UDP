@@ -72,17 +72,20 @@ of a delivery
 +----------------+----------------+
 ```
 
-**Sequence Number**: 
+**Sequence Number**: A number used to denote/identify a packet sent
 
-**Acknowledgement Number**:
+**Acknowledgement Number**: Denotes the sequence number of next packet
+to be received. Can also denote the acknoledgement of prev sent packet
 
 **Flag Bits**: An octet where each bit is a flag
 - 1st bit - ACK bit: This bit is set when the received packet is an acknowledgement packet.
 - 2nd bit - SYN bit: This is the synchronize bit, set when starting a new connection.
 - 3rd bit - FIN bit: This is the finish bit, set when ending a connection.
 - 4th bit - NUL bit: This is a null bit, set when pinging to check if host is online.
+- 5th bit - BEG bit: This is the data begin (signal) bit. Packet with this bit set is sent before data is sent.
+- 6th bit - END bit: This is the data end (signal) bit. Packet with this bit set is sent after data transfer is complete.
 
-The rest 4 bits are unused.
+The rest 2 bits are unused.
 
 
 ### Establish Connection
