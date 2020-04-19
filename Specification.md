@@ -2,16 +2,18 @@
 
 ## Table of Contents
 
-- [Abstract](#abstract)
-- [Introduction](#introduction)
-- [Specification](#specification)
+- [RDTP (Reliable Data Transfer Protocol)(Name subject to change) Specification](#rdtp-reliable-data-transfer-protocolname-subject-to-change-specification)
+  - [Table of Contents](#table-of-contents)
+  - [Abstract](#abstract)
+  - [Introduction](#introduction)
+  - [Specification](#specification)
     - [Process](#process)
-    - [Data Structure Format](#data-structure-formal)
-- [Assumptions](#assumptions)
+    - [Data Structure Format](#data-structure-format)
+    - [Establish Connection](#establish-connection)
+    - [Terminate Connection](#terminate-connection)
+  - [Assumptions](#assumptions)
     - [Network Assumptions](#network-assumptions)
     - [Application Assumptions](#application-assumptions)
-- [Performance Analysis](#performance-analysis)
-- [References](#references)
 
 
 ## Abstract
@@ -53,16 +55,16 @@ of a delivery
 - 1st byte: Sequence number.
 - 2nd byte: Acknowledgement number.
 - 3rd byte: Protocol flags.
-- 4th byte: Protocol attributes (like length of packet)
+- 4th byte: Content-length
 - 5th and 6th byte: Checksum
 
 ```
 +----------------+----------------+
 |   Seq Number   |   Ack Number   |
 +----------------+----------------+
-|    Flag Bits   |   Attributes   |
+|    Flag Bits   |    Checksum    |
 +----------------+----------------+
-|             Checksum            |
+|          Content-length         |
 +----------------+----------------+
 |                                 |
 |              Data               |
@@ -81,6 +83,28 @@ of a delivery
 - 4th bit - NUL bit: This is a null bit, set when pinging to check if host is online.
 
 The rest 4 bits are unused.
+
+
+### Establish Connection
+
+RDTP uses a 3-way handshake to establish a connection:
+- First, the sender sends a SYN packet with initial random sequence number
+- The receiver accepts the request and sends a SYN-ACK packet with his 
+  his sequence number
+- The sender sends back ACK packet to confirm connection
+
+After performing above 3 steps, the connection is established on both sender 
+and receiver
+
+
+### Terminate Connection
+
+RDTP uses a similar 3-way handshake to signal connection termination:
+- First the sender denotes end of connection with a FIN packet
+- The remote receiver sends back a FIN-ACK packet
+- The sender ACKs the FIN-ACK packet and terminates
+
+After the above 3 steps, both sender and receiver terminate
 
 
 ## Assumptions
