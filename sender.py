@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from RDTPConnection import RDTPSender
 
 ip = "127.0.0.1" # localhost

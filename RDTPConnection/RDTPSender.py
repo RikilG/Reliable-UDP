@@ -1,24 +1,34 @@
-from .Socket import RDTPSocket
-from .Packet import Packet
+from .SWSocket import RDTPSocket
 
 class RDTPSender:
+    """A Wrapper class to enclose sender/client methods 
+    and prSWovide abstraction to RDTPSocket class"""
 
     def __init__(self):
+        """RDTPSender class constructor"""
         self.socket = RDTPSocket()
 
-    def connect(self, ip, port=8448): # default listener on port 8448
+    def connect(self, ip, port=8448):
+        """Start a RDTP connection to remote host with given 
+        ip and port number (default 8448)"""
         self.socket.target_address = (ip, port)
         res = self.socket.handshake()
         if res == "Ping Error":
-            print("Receiver not online")
+            print("Timeout: Receiver unreachable or bad connection: Ping Error")
+            self.close()
+            exit() # TODO: try a softer exit method
             return False
         return self.socket.conn_status == "ESTABLISHED"
 
     def send(self, data):
-        assert self.socket.conn_status == "ESTABLISHED"
+        """Method to send data using RDTP over established 
+        connection"""
+        assert self.socket.conn_status == "ESTABLISHED", "Connection not established"
         if type(data) == str: data = data.encode('utf-8')
         assert type(data) in [bytes, bytearray], "Invalid data type"
-        self.socket.send_stream(data)
+        print("Sending data")
+        self.socket.send_stream(data, chunk_size=2**2)
 
     def close(self):
+        """Method to close the socket properly"""
         self.socket.close()

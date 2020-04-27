@@ -3,6 +3,9 @@ import random
 from .Packet import Packet
 from .Packet import ACK, SYN, FIN, NUL, BEG, END
 
+"""This class implements the Stop and Wait kind of protocol over the 
+sockets by overriding the sender and receiver methods. 
+"""
 
 class RDTPSocket:
     # implement packet division, transfer, in-order and reliability
@@ -41,22 +44,23 @@ class RDTPSocket:
     def receive(self, timeout=5, bufsize=2**12):
         self.socket.settimeout(timeout)
         try:
-            binary, address = self.socket.recvfrom(bufsize) #1024 is buffersize
+            binary, address = self.socket.recvfrom(bufsize)
             self.conn_address = address
             message = Packet.toPacket(binary)
             print(":::RECEIVING >>", message)
             if self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo < self.seqNo:
                 if message.getFlag(ACK): # its an ACK for some old packet, drop it
                     print("Received old ack for some old packet")
-                    return None
                 else: # its a data packet already received by us. just ack it
-                    print("Acking old data packet")
-                    self.send(Packet(self.seqNo, message.seqNo+1, ACK), no_incr=True)
-                    return None
-            elif self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo != self.seqNo :
+                    print("^^^Acking old data packet^^^")
+                    self.send(Packet(message.ackNo, message.seqNo+1, ACK), no_incr=True)
+                # return the next packet
+                return self.receive(timeout, bufsize)
+            if self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo != self.seqNo :
                 # ackNo does not match our seqNo
-                print("Incorrect ACK received")
-                print(message)
+                print("^^^Incorrect Packet received^^^")
+                self.close()
+                exit() # TODO: perform more graceful termination
                 return None
         except socket.timeout:
             return "timeout"
@@ -66,8 +70,9 @@ class RDTPSocket:
         self.ackNo = (message.seqNo + 1) % 256
         return message
     
-    def sendTillAck(self, packet):
+    def sendTillAck(self, packet, resend=12): # max-resend for 1 min
         response = None
+        i = 0
         while type(response) is not Packet:
             # send packet
             self.send(packet)
@@ -76,14 +81,16 @@ class RDTPSocket:
             if type(response) == Packet and response.getFlag(ACK):
                 break
             self.seqNo = (self.seqNo - 1) % 256
+            if type(resend) == int:
+                i += 1
+                if i == resend: return "resend-limit-excedeed"
         self.ackNo = (response.seqNo + 1) % 256
+        return response
     
     def ping(self):
-        # NUL packet
-        packet = Packet(0, 0, NUL)
-        self.send(packet)
-        response = self.receive(timeout=10)
-        if response is None or response == "timeout":
+        # NUL packet, try 3 times at max
+        response = self.sendTillAck(Packet(0, 0, NUL), resend=3)
+        if response is None or response == "resend-limit-excedeed":
             return False
         else:
             return True
@@ -96,14 +103,8 @@ class RDTPSocket:
             return "Ping Error"
         # generate a random starting sequence number
         self.seqNo = random.randint(0, 2**8-1)
-        # SYN packet
-        packet = Packet(self.seqNo, 0, SYN)
-        self.send(packet)
-        # await for SYN-ACK packet from receiver
-        response = self.receive()
-        while type(response) != Packet: # TODO: debug form. try changing later
-            response = self.receive()
-        if response == None: return 1
+        # Send SYN and await for SYN-ACK packet from receiver
+        response = self.sendTillAck(Packet(self.seqNo, 0, SYN))
         if not (response.getFlag(ACK) and response.getFlag(SYN) and response.ackNo == self.seqNo):
             print("Incorrect handshake packet received")
             print(response)
@@ -113,42 +114,25 @@ class RDTPSocket:
         self.ackNo = response.seqNo + 1
         self.conn_status = "ESTABLISHED"
         # complete handshake
-        packet = Packet(self.seqNo, self.ackNo, ACK)
-        self.send(packet)
+        self.send(Packet(self.seqNo, self.ackNo, ACK))
         print("Connection accepted by target")
 
     def send_stream(self, data, chunk_size=2**11):
         # start with a Begining BEG signal
-        packet = Packet(self.seqNo, self.ackNo, BEG)
-        self.sendTillAck(packet)
+        self.sendTillAck(Packet(self.seqNo, self.ackNo, BEG))
         s = 0
         while s+chunk_size <= len(data):
-            packet = Packet(self.seqNo, self.ackNo, 0, data[s:s+chunk_size])
-            self.sendTillAck(packet)
+            self.sendTillAck(Packet(self.seqNo, self.ackNo, 0, data[s:s+chunk_size]))
             s += chunk_size
         if s < len(data):
-            packet = Packet(self.seqNo, self.ackNo, 0, data[s:])
-            self.sendTillAck(packet)
+            self.sendTillAck(Packet(self.seqNo, self.ackNo, 0, data[s:]))
         # end the data transfer with a END signal
-        packet = Packet(self.seqNo, self.ackNo, END)
-        self.sendTillAck(packet)
+        self.sendTillAck(Packet(self.seqNo, self.ackNo, END))
 
     def terminate(self):
-        response = None
-        while response == None: # 
-            # send FIN packet
-            packet = Packet(self.seqNo, self.ackNo, FIN)
-            self.send(packet) # don't increment seqno until target accepts FIN
-            # wait for fin-ack from receiver
-            response = self.receive()
-            if response is not None and response.getFlag(ACK) and response.getFlag(FIN):
-                break
-        # host fin-ack received
-            self.seqNo = (self.seqNo - 1) % 256
-        self.ackNo = (response.seqNo + 1) % 256
+        response = self.sendTillAck(Packet(self.seqNo, self.ackNo, FIN))
         # send ack for fin-ack packet and terminate
-        packet = Packet(self.seqNo, self.ackNo, FIN|ACK)
-        self.send(packet)
+        self.send(Packet(self.seqNo, self.ackNo, FIN|ACK))
         self.conn_status == "OPEN"
         print("Terminated connection with receiver")
 
@@ -157,60 +141,45 @@ class RDTPSocket:
     def inbound_conn(self, packet):
         self.seqNo = random.randint(0, 2**8-1)
         self.ackNo = packet.seqNo + 1
-        # send SYN-ACK packet
-        packet = Packet(self.seqNo, self.ackNo, SYN | ACK)
-        self.send(packet)
-        # wait for response to complete handshake
-        response = self.receive()
-        if response == None:
-            print("Timeout: No packet response for handshake")
-            return
-        elif response.getFlag(ACK) and response.ackNo == self.seqNo:
-            self.conn_status = "ESTABLISHED"
+        # send SYN-ACK packet and wait for response to complete handshake
+        self.sendTillAck(Packet(self.seqNo, self.ackNo, SYN | ACK))
+        self.conn_status = "ESTABLISHED"
         print("\n>> Inbound connection accepted >>")
     
     def inbound_stream(self):
         # TODO: NOTE: need to take care of FIN packet if it is sent
         data = bytearray()
         # ACK the BEG packet first
-        packet = Packet(self.seqNo, self.ackNo, ACK)
-        self.send(packet)
+        self.send(Packet(self.seqNo, self.ackNo, ACK))
         while True: # receive data until end packet
-            response = self.receive(timeout=20)
+            response = self.receive(timeout=60)
             if response == "timeout":
-                # TODO: End connection due to no response for a long time
-                pass
-            if response is not None:
-                # Append data and ACK your response
-                data += response.data
-                packet = Packet(self.seqNo, self.ackNo, ACK)
-                self.send(packet)
-                if response.getFlag(END):
-                    break;
+                continue # TODO: End connection due to no response for a long time
+            if response.getFlag(FIN):
+                pass # TODO: manage finish signal
+            # Append data and ACK your response
+            data += response.data
+            packet = Packet(self.seqNo, self.ackNo, ACK)
+            self.send(packet)
+            if response.getFlag(END):
+                break;
         return data
     
     def inbound_term(self):
-        response = None
-        i = 0
-        while response is None:
-            if i==5: break # send at most 5 packets
-            packet = Packet(self.seqNo, self.ackNo, FIN | ACK)
-            self.send(packet)
-            i+=1
-            response = self.receive()
-            if response is not None and response.getFlag(ACK):
-                break;
-            self.seqNo = (self.seqNo - 1) % 256
+        # send FIN-ACK packet, assume terminated if no ACK after 3 resends
+        self.sendTillAck(Packet(self.seqNo, self.ackNo, FIN | ACK), resend=3)
         # end connection
         self.conn_status = "OPEN"
         print("<< Inbound connection terminated <<")
     
     def listen(self, on_data_run):
+        # set the socket to be receiver type
         self.receiver = True
         timeout = 3600
         while True:
             # listen for connections
             response = self.receive(timeout=timeout) # 1hr
+
             if response is None: continue
             elif self.conn_status == "ESTABLISHED" and response == "timeout":
                 print(f"<< Connection timeout: {timeout}s, Disconected <<")
@@ -219,23 +188,19 @@ class RDTPSocket:
             elif type(response) == str: print(response)
             # on SYN packet
             elif response.getFlag(SYN) and self.conn_status == "OPEN": # SYN flag
-                # print("Receiver: Initializing inbound connection")
                 self.inbound_conn(response)
                 if self.conn_status == "ESTABLISHED":
                     timeout = 30
-            # if we receive ping
+            # on NUL packet i.e., we receive ping
             elif response.getFlag(NUL): # NUL flag
-                # print("Receiver: Ping packet received")
-                packet = Packet(0, 0, ACK)
-                self.send(packet)
+                self.send(Packet(0, 0, ACK))
+            # on FIN packet, terminate inbound connection
             elif self.conn_status == "ESTABLISHED" and response.getFlag(FIN):
-                # FIN packet received send FIN-ACK packet
-                # print("Receiver: Terminating inbound connection")
                 self.inbound_term()
                 timeout = 3600
+            # on BEG packet, start data collection
             elif self.conn_status == "ESTABLISHED" and response.getFlag(BEG):
-                # print("Receiver: Data inbound")
                 data = self.inbound_stream()
                 on_data_run(data)
-            else: # any other packet, Don't care
-                pass
+            # any other packet, Don't care
+            else: pass

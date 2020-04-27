@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from RDTPConnection import RDTPReceiver
 
 def this_func(data):
@@ -10,7 +12,7 @@ def main():
     conn = RDTPReceiver()
     try:
         conn.listen(on_data_run=this_func)
-    except:
+    except KeyboardInterrupt:
         print("\rUser exit signal encountered!")
     conn.close()
 
