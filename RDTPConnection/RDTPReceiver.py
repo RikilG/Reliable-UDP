@@ -14,14 +14,14 @@ class RDTPReceiver:
         """RDTPReceiver class constructor"""
         self.socket = RDTPSocket()
 
-    def listen(self, on_data_run=data_fun_default, port=8448):
+    def listen(self, on_data_run=data_fun_default, exit_after_run=False, port=8448):
         """This method binds the socket to given port 
         (default 8448) and starts listening for inbound 
         connections"""
         self.socket.bind(port)
         print("Press Ctrl-C to exit")
         print(f"RDTP receiver listening on port: {port}")
-        self.socket.listen(on_data_run)
+        self.socket.listen(on_data_run, exit_after_run)
 
     def close(self):
         """Method to close the socket properly"""

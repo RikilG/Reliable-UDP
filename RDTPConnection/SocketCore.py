@@ -152,7 +152,7 @@ class Socket:
         self.conn_status = "OPEN"
         print("<< Inbound connection terminated <<")
     
-    def listen(self, on_data_run):
+    def listen(self, on_data_run, exit_after_run=False):
         # set the socket to be receiver type
         self.receiver = True
         timeout = 3600
@@ -178,6 +178,8 @@ class Socket:
             elif self.conn_status == "ESTABLISHED" and response.getFlag(FIN):
                 self.inbound_term()
                 timeout = 3600
+                if exit_after_run:
+                    return
             # on BEG packet, start data collection
             elif self.conn_status == "ESTABLISHED" and response.getFlag(BEG):
                 # ACK the BEG packet first
