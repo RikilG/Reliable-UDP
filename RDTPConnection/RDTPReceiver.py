@@ -1,4 +1,4 @@
-from .SWSocket import RDTPSocket
+from .SRSocket import RDTPSocket
 
 def data_fun_default(data):
     """This is an example function which runs when some data is 

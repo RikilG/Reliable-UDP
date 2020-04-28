@@ -1,4 +1,4 @@
-from .SWSocket import RDTPSocket
+from .SRSocket import RDTPSocket
 
 class RDTPSender:
     """A Wrapper class to enclose sender/client methods 
@@ -27,7 +27,7 @@ class RDTPSender:
         if type(data) == str: data = data.encode('utf-8')
         assert type(data) in [bytes, bytearray], "Invalid data type"
         print("Sending data")
-        self.socket.send_stream(data)#, chunk_size=2**2)
+        self.socket.send_stream(data)
 
     def close(self):
         """Method to close the socket properly"""

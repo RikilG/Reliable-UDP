@@ -5,6 +5,11 @@
 
 This commands can be found [here](https://wiki.linuxfoundation.org/networking/netem)
 
+## Basic COMMAND SYNTAX
+```
+sudo tc qdisc <add/change> dev <lo/eth0> root netem <operation> <...operation params...>
+```
+
 ## To see what is configured on an interface, do this
 ```
 sudo tc -s qdisc ls dev lo

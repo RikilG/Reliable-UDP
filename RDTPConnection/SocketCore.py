@@ -56,19 +56,6 @@ class Socket:
                 print("dropping corrupted packet")
                 return self.receive(timeout, bufsize)
             # print(":::RECEIVING >>", message)
-            if self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo < self.seqNo:
-                if message.getFlag(ACK): # its an ACK for some old packet, drop it
-                    print("^^^Received ack for past packet^^^")
-                else: # its a data packet already received by us. just ack it
-                    print("^^^Acking old data packet^^^")
-                    self.send(Packet(message.ackNo, message.seqNo+1, ACK), no_incr=True)
-                # return the next packet
-                return self.receive(timeout, bufsize)
-            if self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo != self.seqNo :
-                # ackNo does not match our seqNo
-                print("^^^Incorrect Packet received^^^")
-                self.close()
-                exit() # TODO: perform more graceful termination
         except socket.timeout:
             return "timeout"
         self.ackNo = (message.seqNo + 1) % 256
@@ -90,7 +77,35 @@ class Socket:
             self.send(packet)
             # wait for ACK
             response = self.receive()
+            while self.conn_status == "ESTABLISHED" and type(response) is Packet and response.ackNo < self.seqNo:
+                if response.getFlag(ACK): # its an ACK for some old packet
+                    print("^^^Received ack for past packet^^^")
+                else: # its a data packet already received by us. just ack it
+                    print("^^^Acking old data packet^^^")
+                    self.send(Packet(response.ackNo, response.seqNo+1, ACK), no_incr=True)
+                response = self.receive()
+            if type(response) == Packet and self.conn_status == "ESTABLISHED" and not response.getFlag(FIN) and response.ackNo > self.seqNo :
+                # ackNo does not match our seqNo
+                print("^^^Incorrect Packet received^^^")
+                self.close()
+                exit() # TODO: perform more graceful termination
             if type(response) == Packet and response.getFlag(ACK):
+                break
+            self.seqNo = (self.seqNo - 1) % 256
+            if type(resend) == int:
+                i += 1
+                if i == resend: return "resend-limit-excedeed"
+        self.ackNo = (response.seqNo + 1) % 256
+        return response
+    
+    def sendTill(self, flags, packet, resend=12): # max-resend for 1 min
+        response = None
+        i = 0
+        while type(response) is not Packet:
+            # send packet
+            self.send(packet)
+            response = self.receive()
+            if type(response) == Packet and response.flags == flags:
                 break
             self.seqNo = (self.seqNo - 1) % 256
             if type(resend) == int:
@@ -104,15 +119,12 @@ class Socket:
     def handshake(self):
         print("Initiating connection...")
         # check if host is online with ping
-        if not self.ping():
-            return "Ping Error"
+        # if not self.ping(): return "Ping Error"
         # generate a random starting sequence number
         self.seqNo = random.randint(0, 2**8-1)
         # Send SYN and await for SYN-ACK packet from receiver
-        response = self.sendTillAck(Packet(self.seqNo, 0, SYN))
-        if not (response.getFlag(ACK) and response.getFlag(SYN) and response.ackNo == self.seqNo):
-            print("Incorrect handshake packet received")
-            return 1
+        response = self.sendTill(SYN | ACK, Packet(self.seqNo, 0, SYN), resend=3)
+        if response == "resend-limit-excedeed": return "Ping Error"
         self.ackNo = response.seqNo + 1
         self.conn_status = "ESTABLISHED"
         # complete handshake
@@ -120,16 +132,16 @@ class Socket:
         print("Connection accepted by target")
 
     # OVERRIDE THIS METHOD
-    def send_stream(self, data, chunk_size=2**11):
+    def send_stream(self, data):
         # start with a Begining BEG signal and End with END signal
         # implement in child socket class which provide reliability
         pass
 
     def terminate(self):
         print("Terminating connection...")
-        response = self.sendTillAck(Packet(self.seqNo, self.ackNo, FIN))
+        response = self.sendTill(FIN | ACK, Packet(self.seqNo, self.ackNo, FIN))
         # send ack for fin-ack packet and terminate
-        self.send(Packet(self.seqNo, self.ackNo, FIN|ACK))
+        self.send(Packet(self.seqNo, self.ackNo, FIN | ACK))
         self.conn_status == "OPEN"
         print("Terminated connection with receiver")
 
@@ -138,7 +150,7 @@ class Socket:
     def inbound_conn(self, packet):
         self.seqNo = random.randint(0, 2**8-1)
         self.ackNo = packet.seqNo + 1
-        # send SYN-ACK packet and wait for response to complete handshake
+        # send SYN-ACK packet and wait for ACK response to complete handshake
         self.sendTillAck(Packet(self.seqNo, self.ackNo, SYN | ACK))
         self.conn_status = "ESTABLISHED"
         print("\n>> Inbound connection accepted >>")

@@ -10,10 +10,12 @@ class RDTPSocket(Socket):
 
     def __init__(self, ip=None, port=None):
         super().__init__(ip, port)
+        self.chunk_size = 2**11
     
     #################### Sender Methods ####################
 
-    def send_stream(self, data, chunk_size=2**11):
+    def send_stream(self, data):
+        chunk_size = self.chunk_size
         # start with a Begining BEG signal
         self.sendTillAck(Packet(self.seqNo, self.ackNo, BEG, f"{len(data)}"))
         s = 0

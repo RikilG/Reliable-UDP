@@ -5,7 +5,7 @@ from RDTPConnection import RDTPReceiver
 def this_func(data):
     if type(data) in [bytes, bytearray]:
         data = data.decode('utf-8')
-    assert type(data) == str
+    assert type(data) == str, data
     print("RECEIVED> ", data)
 
 def main():

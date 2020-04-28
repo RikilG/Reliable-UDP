@@ -12,7 +12,7 @@ class Packet:
     payload: cannot exceed 2**15(safe limit). UDP packet max size is 2**16 including headers
     """
     
-    def __init__(self, seqNo, ackNo, flags, data="", binary=None):
+    def __init__(self, seqNo, ackNo, flags, data="", data_index=0, binary=None):
         """Packet class constructor"""
         # content-length field is < 2 bytes only (6 bytes for header, 2 for safety!)
         assert len(data) <= 0b1111111111111000 # 0xffff
@@ -24,6 +24,7 @@ class Packet:
         self.ackNo = ackNo
         self.flags = flags # ACK | SYN | FIN | NUL
         self.data = data
+        self.data_index = data_index
         if binary != None:
             self.binary = binary
             return
@@ -33,9 +34,9 @@ class Packet:
             self.payload = data
         dataLen0 = (len(data) >> 8) & 0b11111111
         dataLen1 = (len(data)) & 0b11111111
-        checksum = (((seqNo + ackNo + flags + dataLen0 + dataLen1 + sum(self.payload)) ^ 0b11111111) + 1) & 0b11111111
+        checksum = (((seqNo + ackNo + flags + data_index + dataLen0 + dataLen1 + sum(self.payload)) ^ 0b11111111) + 1) & 0b11111111
         # 6 byte headers
-        self.headers = bytearray([seqNo, ackNo, flags, checksum, dataLen0, dataLen1])
+        self.headers = bytearray([seqNo, ackNo, flags, data_index, dataLen0, dataLen1, checksum])
         self.binary = self.headers + self.payload
     
     def toBytes(self):
@@ -46,7 +47,7 @@ class Packet:
         to packet class object"""
         v = ( ( sum(x) & 0b11111111 ) == 0 )
         if v != True: raise Exception("Checksum verification failed!")
-        return Packet(x[0], x[1], x[2], x[6:], x)
+        return Packet(x[0], x[1], x[2], x[7:], x[3], x)
         
     def getFlag(self, x):
         """Return wheter corresponding flag is set or not"""
@@ -72,7 +73,8 @@ class Packet:
 seqNo: {self.seqNo},
 ackNo: {self.ackNo},
 flags: [
-{flags}]
+{flags}],
+data-index: {self.data_index},
 content-length: {len(self.data)},
 data: {self.data}
         """
