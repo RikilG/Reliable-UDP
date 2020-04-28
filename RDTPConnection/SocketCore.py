@@ -50,7 +50,11 @@ class Socket:
             if self.conn_status == "ESTABLISHED" and address != self.conn_address:
                 # packet from different sender drop it as we are connected with diff sender
                 return self.receive(timeout, bufsize)
-            message = Packet.toPacket(binary)
+            try:
+                message = Packet.toPacket(binary)
+            except Exception as e:
+                print("dropping corrupted packet")
+                return self.receive(timeout, bufsize)
             # print(":::RECEIVING >>", message)
             if self.conn_status == "ESTABLISHED" and not message.getFlag(FIN) and message.ackNo < self.seqNo:
                 if message.getFlag(ACK): # its an ACK for some old packet, drop it
@@ -138,6 +142,7 @@ class Socket:
         self.sendTillAck(Packet(self.seqNo, self.ackNo, SYN | ACK))
         self.conn_status = "ESTABLISHED"
         print("\n>> Inbound connection accepted >>")
+        print(f"Address: IP: {self.conn_address[0]}, Port: {self.conn_address[1]}")
     
     # OVERRIDE THIS METHOD
     def inbound_stream(self):
