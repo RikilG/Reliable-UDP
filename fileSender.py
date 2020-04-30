@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 
-import argparse
 import os
+import argparse
+from time import time
 from RDTPConnection import RDTPSender
 
 def send(ip, data):
+    st_time = time()
     conn = RDTPSender()
     conn.connect(ip)
     conn.send(data)
     conn.close()
+    duration = round(time() - st_time, 6)
+    throughput = round(len(data)/(duration*1024), 3) # KB/s
+    print(f"File Size: {len(data)} Bytes")
+    print(f"Duration: {duration} sec")
+    print(f"Throughput: {throughput} KB/s")
 
 def main(input, ip):
     if not os.path.exists(input):

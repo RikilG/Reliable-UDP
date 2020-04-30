@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import argparse
 import os
+import argparse
 from RDTPConnection import RDTPReceiver
 
 output = None
@@ -12,6 +12,7 @@ def this_func(data):
         f.write(data)
 
 def main():
+    print("Waiting for inbound file transfer connection...")
     conn = RDTPReceiver()
     try:
         conn.listen(on_data_run=this_func, exit_after_run=True)

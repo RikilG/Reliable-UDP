@@ -41,7 +41,7 @@ class RDTPSocket(Socket):
                     response = self.receive()
                     if type(response) == Packet and response.getFlag(ACK) and response.data_index+win_start < len(acked):
                         acked[ response.data_index + win_start ] = 1
-            print(f"\r{round(sum(acked)*100/len(acked),1)}%...", end='')
+                print(f"\r{round(sum(acked)*100/len(acked),1)}%...", end='')
         # END signal not required as we come out of loop only if all packets are ACKed
         # end the data transfer with a END signal
         self.sendTillAck(Packet(self.seqNo, self.ackNo, END), resend=2)
@@ -66,7 +66,7 @@ class RDTPSocket(Socket):
                     data[ response.data_index + win_start ] = response.data
                     received[ response.data_index + win_start ] = 1
                     self.send(Packet(self.seqNo, self.ackNo, ACK, data_index=response.data_index))
-            print(f"\r{round(sum(received)*100/len(received), 1)}%...", end='')
+                print(f"\r{round(sum(received)*100/len(received), 1)}%...", end='')
             if response.getFlag(END):
                 break;
         response = self.receive() # wait for END packet

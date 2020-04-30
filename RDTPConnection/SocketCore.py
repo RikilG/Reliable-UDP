@@ -61,13 +61,17 @@ class Socket:
         self.ackNo = (message.seqNo + 1) % 256
         return message
     
-    def ping(self):
-        # NUL packet, try 3 times at max
-        response = self.sendTillAck(Packet(0, 0, NUL), resend=3)
-        if response is None or response == "resend-limit-excedeed":
-            return False
-        else:
-            return True
+    def ping(self, n=5):
+        ratio = 0
+        for i in range(n):
+            self.send(Packet(0,0,NUL))
+        response = [0]*n
+        for i in range(n):
+            response[i] = self.receive(timeout=3)
+        for i in range(n):
+            if type(response[i]) == Packet and response[i].getFlag(ACK):
+                ratio += 1
+        return round(ratio*100/n, 2)
     
     def sendTillAck(self, packet, resend=12): # max-resend for 1 min
         response = None
@@ -117,9 +121,11 @@ class Socket:
     #################### Sender Methods ####################
 
     def handshake(self):
+        # Check network effective transfer rate using ping packets
+        print("Testing network stability...", end='')
+        ratio = self.ping()
+        print(f" {ratio}%")
         print("Initiating connection...")
-        # check if host is online with ping
-        # if not self.ping(): return "Ping Error"
         # generate a random starting sequence number
         self.seqNo = random.randint(0, 2**8-1)
         # Send SYN and await for SYN-ACK packet from receiver
