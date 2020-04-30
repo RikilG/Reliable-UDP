@@ -6,15 +6,17 @@
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Specification](#specification)
-    - [API Specification: (describe the api of class)](#api-specification-describe-the-api-of-class)
+    - [API Specification](#api-specification)
+      - [RDTPSender](#rdtpsender)
+      - [RDTPReceiver](#rdtpreceiver)
     - [Protocol Overview](#protocol-overview)
     - [Packet Format](#packet-format)
     - [Connection Establishment](#connection-establishment)
     - [Data Transfer](#data-transfer)
     - [Connection Termination](#connection-termination)
+  - [Network Tolerance](#network-tolerance)
   - [Assumptions](#assumptions)
     - [Network Assumptions](#network-assumptions)
-    - [Application Assumptions](#application-assumptions)
 
 
 ## Introduction
@@ -29,10 +31,25 @@ existing UDP transport protocol with support for in-order and reliable delivery 
 sliding window protocol.
 
 
-
 ## Specification
 
-### API Specification: (describe the api of class)
+### API Specification
+
+The RDTPConnection library provides 2 classes: RDTPSender and RDTPReceiver which implement the RDTP specification.
+
+#### RDTPSender
+**RDTPSender** is a class which needs to be instantiated before the protocol can be used. This class 
+provides 3 simple methods which abstract the complete protocol: 
+- connect(ip_address): Open a connection to target ip_address
+- send(data): send data(binary format) to the receiver
+- close(): terminate the connection and close the socket
+
+#### RDTPReceiver
+**RDTPReceiver** is also a class which provides the following 2 methods:
+- listen(handleData_func): Listen for any incoming connections and run the given handleData function 
+  when data is received. There is also an optional 2nd parameter which takes boolean value to decide 
+  whether to exit after data transfer.
+- close(): stop listening, and close the socket.
 
 ### Protocol Overview
 
@@ -143,6 +160,23 @@ After the above 3 steps, both the sender and receiver successfully terminate and
 connection is broken down.
 
 
+## Network Tolerance
+In the real world, the internet does not always work in the ideal assumed way. There are various 
+problems associated with a network connection like packet delay, packet loss, packet reorder, 
+packet duplication, packet corruption and network jitter. RDTP follows the following standards 
+to resolve each of this issue:
+- Packet Loss: As RDTP follows a selective repeat protocol, all the packets which are not ACKed by the 
+  receiver are assumed to be lost by the sender and the unAcked packets in the same window are sent until 
+  all packets in the window are ACKed and then the window shifts to a new data segment
+- Packet Delay: No specific solution is implemented for packet delay. If the sender times out before a 
+  packet reaches, it resends all the unAcked packets in the current window.
+- Packet Reorder: Packet reorder doesn’t really affect the protocol since selective repeat is used. The 
+  receiver always takes note of any packet received in the current window and drops all other packets
+- Packet Duplication: All the packets which are already received by the sender are silently dropped whereas 
+  duplicates received by receiver will be ACKed.
+- Packet Corruption: Each packet whose calculated checksum does not match up with the included checksum 
+  are dropped.
+
 
 ## Assumptions
 
@@ -153,6 +187,3 @@ connection is broken down.
 - Transferred packets are of fixed size.(subject to change)
 - Packets which have not been acked before timeout are assumed to be lost
 - A full duplex network link is assumed for bi-directional data transfer.
-
-### Application Assumptions
-

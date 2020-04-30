@@ -83,9 +83,10 @@ class Socket:
             response = self.receive()
             while self.conn_status == "ESTABLISHED" and type(response) is Packet and response.ackNo < self.seqNo:
                 if response.getFlag(ACK): # its an ACK for some old packet
-                    print("^^^Received ack for past packet^^^")
+                    # print("^^^Received ack for past packet^^^")
+                    pass
                 else: # its a data packet already received by us. just ack it
-                    print("^^^Acking old data packet^^^")
+                    # print("^^^Acking old data packet^^^")
                     self.send(Packet(response.ackNo, response.seqNo+1, ACK), no_incr=True)
                 response = self.receive()
             if type(response) == Packet and self.conn_status == "ESTABLISHED" and not response.getFlag(FIN) and response.ackNo > self.seqNo :

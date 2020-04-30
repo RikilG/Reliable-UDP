@@ -86,8 +86,8 @@ plt.show()
 
 # Packet Duplication vs Time
 # time for 0 duplication = 0.0021
-duplication = [0, 5, 10, 20, 35, 50]#, 80, 100]
-time = [0.0015, 0.0022, 0.0018, 0.002, 0.0023, 0.0021]
+duplication = [0, 5, 10, 20, 35, 50, 80, 100]
+time = [0.0015, 0.0022, 0.0018, 0.002, 0.0023, 0.0021, 0.0027, 0.0026]
 plt.title("Duplication % vs Time")
 plt.ylabel("Time taken (in sec)")
 plt.xlabel("Duplication %")
@@ -97,12 +97,12 @@ plt.show()
 
 # Packet Duplication vs Throughput
 # throughput for 0% duplication = 10225 KB/s
-duplication = [0, 5, 10, 20, 35, 50]#, 80, 100]
-throughput = [8225, 7222, 7327, 8017, 6805, 7628]
+duplication = [0, 5, 10, 20, 35, 50, 80, 100]
+throughput = [8225, 7222, 7327, 8017, 6805, 7628, 6443, 6069]
 plt.title("Duplication % vs Throughput")
 plt.ylabel("Throughput (KB/s)")
 plt.xlabel("Duplication %")
-plt.ylim(3000, 10000)
+plt.ylim(2000, 12000)
 plt.plot(duplication, throughput)
 plt.show()
 

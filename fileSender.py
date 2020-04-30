@@ -23,7 +23,10 @@ def main(input, ip):
         exit()
     with open(input, "rb") as f:
         data = f.read()
-        send(ip, data)
+        try: 
+            send(ip, data)
+        except Exception as e:
+            print("Error in data transfer. Please retry again later")
 
 def parseArgs():
     parser = argparse.ArgumentParser(description="Send files using RDTP protocol")

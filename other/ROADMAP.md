@@ -1,29 +1,29 @@
 # Implement my own Application layer protocol based on reliable UDP
 
 ## Roadmap/Notes
- - [ ] Write a class to implement protocol
- - [ ] Designing reliability over UDP in application layer. Take care of:
-   - [ ] Sequence numbers
-   - [ ] Checksum for corruption verification
-   - [ ] Acknowledgements
-   - [ ] Re-transmissions
-   - [ ] In-Order Delivery
-   - [ ] Connection handling (close connection with a END/RST signal, persistent-connection check, etc)
+ - [x] Write a class to implement protocol
+ - [x] Designing reliability over UDP in application layer. Take care of:
+   - [x] Sequence numbers
+   - [x] Checksum for corruption verification
+   - [x] Acknowledgements
+   - [x] Re-transmissions
+   - [x] In-Order Delivery
+   - [x] Connection handling (close connection with a END/RST signal, persistent-connection check, etc)
    - [ ] Flow control (rate of sending/receiving packets) (Not required as assignment talks of reliability only)
- - [ ] A toy application (chat, messaging, file transfer, etc) which uses the designed protocol
+ - [x] A toy application (chat, messaging, file transfer, etc) which uses the designed protocol
  - [ ] A Readme.txt file with instructions to compile and run the application
  - [ ] Submit a Protocol Specification
-   - [ ] Have a look at example specification in folder
+   - [x] Have a look at example specification in folder
    - [ ] Contain assumptions about application
-   - [ ] Contain assumptions about network
+   - [x] Contain assumptions about network
    - [ ] Strategies to tackle different situations
-   - [ ] 2-3 pages with 11 point font size for non-header text
- - [ ] PDF with plots of performance analysis under different network conditions: (using netem tool to emulate conditions on localhost)
-   - [ ] packet loss
-   - [ ] delays
-   - [ ] re-ordering
-   - [ ] corruption
-   - [ ] jitter?
+   - [x] 2-3 pages with 11 point font size for non-header text
+ - [x] PDF with plots of performance analysis under different network conditions: (using netem tool to emulate conditions on localhost)
+   - [x] packet loss
+   - [x] delays
+   - [x] re-ordering
+   - [x] corruption
+   - [x] jitter?
    - [ ] rate?
 
 
