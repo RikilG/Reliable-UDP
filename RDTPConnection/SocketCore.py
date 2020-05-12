@@ -126,6 +126,9 @@ class Socket:
         print("Testing network stability...", end='')
         ratio = self.ping()
         print(f" {ratio}%")
+        if ratio < 10: # network stability < 10%
+            x = input("Unstable connection detected. do you still want to continue? (y/n): ")
+            if x != "y": exit(0) # TODO: perform graceful termination or throw exception
         print("Initiating connection...")
         # generate a random starting sequence number
         self.seqNo = random.randint(0, 2**8-1)

@@ -1,5 +1,7 @@
 # RDTP (Reliable Data Transfer Protocol)(Name subject to change) Specification
 
+Final updated specification can be found [here](./RDTP%20Specification.pdf).
+
 ## Table of Contents
 
 - [RDTP (Reliable Data Transfer Protocol)(Name subject to change) Specification](#rdtp-reliable-data-transfer-protocolname-subject-to-change-specification)
@@ -73,7 +75,7 @@ The **Receiver** performs the following tasks:
 
 ### Packet Format
 
-**Header Format** (8 Bytes):
+**Header Format** (7 Bytes):
 - 1st byte: Sequence number.
 - 2nd byte: Acknowledgement number.
 - 3rd byte: Protocol flags.
